@@ -36,3 +36,10 @@ def tickets_a_tester(wf):
         out.append({"key": it["key"], "summary": it["fields"]["summary"], "status": it["fields"]["status"]["name"], "env": env,
                     "env_actif": wf["envs"][env]["actif"], "deja_teste": label in (it["fields"].get("labels") or []), "label": label})
     return out
+
+
+def add_label(key, label):
+    """Écriture Jira : pose un label (mode --apply uniquement)."""
+    site = os.environ["JIRA_SITE"].rstrip("/")
+    r = requests.put(f"{site}/rest/api/3/issue/{key}", auth=_auth(), timeout=30, json={"update": {"labels": [{"add": label}]}})
+    r.raise_for_status()

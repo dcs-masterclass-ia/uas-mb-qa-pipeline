@@ -28,11 +28,14 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt -r core/requirements.txt
-      - name: Poller (simulation tant que la recette n'est pas branchée)
+      - name: Poller (SIMULATION : retirer le drapeau pour passer en réel une fois la page de décision déployée)
         env:
           JIRA_SITE: ${{ secrets.JIRA_SITE }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+          QA_LINK_SECRET: ${{ secrets.QA_LINK_SECRET }}
+          UAS_MB_TEAMS_WEBHOOK: ${{ secrets.UAS_MB_TEAMS_WEBHOOK }}
+          DECISION_BASE_URL: ${{ vars.DECISION_BASE_URL }}
           QA_CONFIG: core/config/workflow.yml
           PYTHONPATH: .:core
         run: python -m pipeline.poller
