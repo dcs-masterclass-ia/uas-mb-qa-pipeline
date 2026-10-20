@@ -76,7 +76,7 @@ module.exports = async function handler(req, res) {
       const txt = (x, o = {}) => ({ type: "TextBlock", wrap: true, text: x, ...o });
       await fetch(process.env.UAS_MB_TEAMS_WEBHOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
         type: "message", attachments: [{ contentType: "application/vnd.microsoft.card.adaptive", content: { $schema: "http://adaptivecards.io/schemas/adaptive-card.json", type: "AdaptiveCard", version: "1.4",
-          body: [txt(`${q.a === "accept" ? "✅ Accepté" : "❌ Refusé"} — ${key}`, { weight: "Bolder", size: "Large" }), txt(`Décision enregistrée. Statut Jira → ${cible.nom}.`)] } }] }) }).catch(() => {});
+          body: [txt(`${q.a === "accept" ? "✅ Accepté" : "❌ Refusé"} — ${key}`, { weight: "Bolder", size: "Medium" }), txt(`[${key}](${process.env.JIRA_SITE}/browse/${key}) · ${issue.fields.summary.replace(/^(\s*\[[^\]]*\]\s*)+/, "")}`), txt(`Le ticket est passé en « ${cible.nom} ».`)] } }] }) }).catch(() => {});
     }
     return page(res, 200, "Décision enregistrée", `${esc(key)} : ${ACTIONS[q.a].toLowerCase()}. Statut Jira → ${esc(cible.nom)}.`);
   } catch (e) {

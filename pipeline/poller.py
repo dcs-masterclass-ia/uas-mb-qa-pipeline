@@ -18,6 +18,7 @@ from pipeline.jira import load_workflow, tickets_a_tester, add_label, search
 
 try:
     from mbqa.run import run_ticket
+    from mbqa.resume import resume
 except ImportError:
     sys.exit("Dépôt privé « core » introuvable : ajouter son chemin au PYTHONPATH (voir le workflow).")
 
@@ -67,7 +68,7 @@ def main():
             print("       -", an)
         if envoie:
             cid = f"{t['key']}:{t['env']}"
-            payload = cards.card_resultat(t["key"], t["summary"], t["env"], r["ok"], r["ko"], r["warn"], r["anomalies"],
+            payload = cards.card_resultat(t["key"], t["summary"], t["env"], resume(r),
                                           cards.link(base, secret, cid, "accept"), cards.link(base, secret, cid, "refuse"),
                                           st["accept"]["nom"], st["refuse"]["nom"])
             print("     carte « résultat » :", cards.envoie(hook, payload))
