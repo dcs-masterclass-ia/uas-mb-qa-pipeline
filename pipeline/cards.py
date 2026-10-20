@@ -53,8 +53,8 @@ def card_lancee(key, summary, env):
 def card_resultat(key, summary, env, res, accept_url, refuse_url, accept_nom, refuse_nom):
     """res = résumé lisible : {verdict:(ton, titre, phrase), verifie:[(ok|ko, texte)], annexes:[texte]} (voir mbqa.resume)."""
     ton, titre, phrase = res["verdict"]
-    style = {"ok": "good", "ko": "attention", "neutre": "emphasis"}[ton]
-    icone = {"ok": "✅", "ko": "⚠️", "neutre": "ℹ️"}[ton]
+    style = {"ok": "good", "ko": "attention", "neutre": "emphasis", "manuel": "warning"}[ton]
+    icone = {"ok": "✅", "ko": "⚠️", "neutre": "ℹ️", "manuel": "🖐️"}[ton]
     corps = [{"type": "Container", "style": style, "bleed": False, "items": [
         _txt(f"RECETTE {ENV_LABEL.get(env, env)}", isSubtle=True, size="Small", weight="Bolder"),
         _txt(f"{icone} {titre}", size="Large", weight="Bolder", spacing="None"),
