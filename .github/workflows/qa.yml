@@ -28,7 +28,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt -r core/requirements.txt
-      - name: Poller (SIMULATION : retirer le drapeau pour passer en réel une fois la page de décision déployée)
+      - name: "Poller - simulation (ajouter --apply pour passer en réel)"
         env:
           JIRA_SITE: ${{ secrets.JIRA_SITE }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
