@@ -19,7 +19,7 @@ Jira (statut change) → poller (GitHub Actions, ~20 min) → recette (dépôt p
 
 ## Secrets à définir
 
-GitHub (Actions) : `JIRA_SITE`, `JIRA_EMAIL`, `JIRA_TOKEN`, `CORE_REPO_TOKEN` ; variable `CORE_REPO`.
+GitHub (Actions) : `JIRA_SITE`, `JIRA_EMAIL`, `JIRA_TOKEN`, `QA_LINK_SECRET`, `UAS_MB_TEAMS_WEBHOOK`, `CORE_DEPLOY_KEY` (clé de déploiement en lecture seule sur le dépôt privé) ; variables `CORE_REPO`, `DECISION_BASE_URL`.
 Vercel : `QA_LINK_SECRET`, `JIRA_SITE`, `JIRA_EMAIL`, `JIRA_TOKEN`, `QA_WORKFLOW_JSON`, `UAS_MB_TEAMS_WEBHOOK` (optionnel).
 
 ## Sécurité
