@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+core/
+.env
+*.env
+config/workflow.yml
+Icon
+Icon?
+.DS_Store

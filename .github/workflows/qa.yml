@@ -1,0 +1,38 @@
+name: qa-uas-mb
+# Poller Jira -> recette automatique. Dépôt public : aucune donnée sensible ici, tout vient des secrets et du dépôt privé « core ».
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-uas-mb
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Récupérer le dépôt privé (parcours, recette, config)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.CORE_REPO }}
+          token: ${{ secrets.CORE_REPO_TOKEN }}
+          path: core
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt -r core/requirements.txt
+      - name: Poller (simulation tant que la recette n'est pas branchée)
+        env:
+          JIRA_SITE: ${{ secrets.JIRA_SITE }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+          QA_CONFIG: core/config/workflow.yml
+          PYTHONPATH: .:core
+        run: python -m pipeline.poller

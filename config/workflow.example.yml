@@ -1,0 +1,11 @@
+# Exemple SANS valeurs réelles. La vraie config (hôtes, ids de statuts, sites) vit dans le dépôt privé « core ».
+statuts:
+  "<id_statut_staging>": {env: stg,  accept: {id: "<id>", nom: "<nom>"}, refuse: {id: "<id>", nom: "<nom>"}}
+  "<id_statut_preprod>": {env: ppr,  accept: {id: "<id>", nom: "<nom>"}, refuse: {id: "<id>", nom: "<nom>"}}
+  "<id_statut_prod>":    {env: prod, accept: {id: "<id>", nom: "<nom>"}, refuse: {id: "<id>", nom: "<nom>"}}
+envs:
+  stg:  {actif: false}
+  ppr:  {actif: false}
+  prod: {actif: false}
+jql_base: 'project = XXX AND summary ~ "…"'
+label_deja_teste: "qa-{env}-fait"
