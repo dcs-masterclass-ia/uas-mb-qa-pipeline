@@ -43,3 +43,21 @@ def add_label(key, label):
     site = os.environ["JIRA_SITE"].rstrip("/")
     r = requests.put(f"{site}/rest/api/3/issue/{key}", auth=_auth(), timeout=30, json={"update": {"labels": [{"add": label}]}})
     r.raise_for_status()
+
+
+def remove_label(key, label):
+    site = os.environ["JIRA_SITE"].rstrip("/")
+    r = requests.put(f"{site}/rest/api/3/issue/{key}", auth=_auth(), timeout=30, json={"update": {"labels": [{"remove": label}]}})
+    r.raise_for_status()
+
+
+def event_deja_vu(key, event):
+    """Dédoublonnage des webhooks (Jira peut livrer deux fois) : propriété d'issue « qa-last-event »."""
+    site = os.environ["JIRA_SITE"].rstrip("/")
+    r = requests.get(f"{site}/rest/api/3/issue/{key}/properties/qa-last-event", auth=_auth(), timeout=30)
+    return r.status_code == 200 and r.json().get("value") == event
+
+
+def marque_event(key, event):
+    site = os.environ["JIRA_SITE"].rstrip("/")
+    requests.put(f"{site}/rest/api/3/issue/{key}/properties/qa-last-event", auth=_auth(), timeout=30, json=event).raise_for_status()

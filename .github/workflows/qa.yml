@@ -1,9 +1,24 @@
 name: qa-uas-mb
-# Poller Jira -> recette automatique. Dépôt public : aucune donnée sensible ici, tout vient des secrets et du dépôt privé « core ».
+# Recette automatique UAS MB. Dépôt public : aucune donnée sensible ici, tout vient des secrets et du dépôt privé « core ».
+#  - workflow_dispatch avec ticket/env/event : lancé quasi instantanément par le webhook Jira (api/jira-hook.js)
+#  - schedule : filet de sécurité (rattrape un webhook perdu) ; GitHub ne descend pas sous ~5 min.
 on:
   schedule:
     - cron: "*/20 * * * *"
   workflow_dispatch:
+    inputs:
+      ticket:
+        description: "Clé du ticket (vide = filet de sécurité)"
+        required: false
+        default: ""
+      env:
+        description: "Environnement : stg | ppr | prod"
+        required: false
+        default: ""
+      event:
+        description: "Identifiant de l'événement Jira (dédoublonnage)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -13,7 +28,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  poll:
+  recette:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -27,8 +42,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            core/requirements.txt
       - run: pip install -r requirements.txt -r core/requirements.txt
-      - name: "Poller - simulation (ajouter --apply pour passer en réel)"
+      - name: "Recette"
         env:
           JIRA_SITE: ${{ secrets.JIRA_SITE }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
@@ -38,4 +57,13 @@ jobs:
           DECISION_BASE_URL: ${{ vars.DECISION_BASE_URL }}
           QA_CONFIG: core/config/workflow.yml
           PYTHONPATH: .:core
-        run: python -m pipeline.poller
+          IN_TICKET: ${{ github.event.inputs.ticket }}
+          IN_ENV: ${{ github.event.inputs.env }}
+          IN_EVENT: ${{ github.event.inputs.event }}
+        run: |
+          # les entrées passent par des variables d'environnement (jamais interpolées dans la commande)
+          if [ -n "$IN_TICKET" ]; then
+            python -m pipeline.poller --apply --ticket "$IN_TICKET" --env "$IN_ENV" --event "$IN_EVENT"
+          else
+            python -m pipeline.poller --apply
+          fi
