@@ -4,7 +4,8 @@
  * Les boutons de la carte Teams ouvrent GET /api/decision?id=KEY:env&a=accept|refuse&exp=&sig= ; la page affiche une
  * confirmation (un simple GET -- aperçu de lien, antivirus -- ne décide jamais), le bouton envoie un POST.
  * Authentification par lien signé : HMAC-SHA256 de "id|action|exp" avec QA_LINK_SECRET, validité 7 jours.
- * Effet du POST : commentaire Jira + transition vers le statut configuré + label "qa-decision-<env>" (une décision une fois).
+ * Effet du POST : commentaire Jira + transition vers le statut configuré. Aucun label : une décision n'a lieu qu'une fois parce que
+ * le ticket doit encore être dans le statut de la carte ; après la transition, un second clic est refusé.
  *
  * Variables d'environnement (Vercel) : QA_LINK_SECRET, JIRA_SITE, JIRA_EMAIL, JIRA_TOKEN,
  *   QA_WORKFLOW_JSON = {"stg":{"statut":"11408","accept":{"id":"11409","nom":"…"},"refuse":{"id":"11406","nom":"…"}}, …}
@@ -52,10 +53,8 @@ module.exports = async function handler(req, res) {
   let wf;
   try { wf = JSON.parse(process.env.QA_WORKFLOW_JSON || "{}")[env]; } catch { wf = null; }
   if (!/^[A-Z][A-Z0-9]+-\d+$/.test(key || "") || !wf || !wf[q.a]) return page(res, 400, "Décision impossible", "Ticket ou environnement inconnu.");
-  const label = `qa-decision-${env}`;
   try {
-    const issue = await jira(`/issue/${key}?fields=status,labels,summary`);
-    if ((issue.fields.labels || []).includes(label)) return page(res, 200, "Déjà décidé", `Une décision a déjà été prise pour ${esc(key)} (${esc(env)}).`);
+    const issue = await jira(`/issue/${key}?fields=status,summary`);
     if (wf.statut && issue.fields.status.id !== String(wf.statut))
       return page(res, 200, "Ticket déjà passé à autre chose", `${esc(key)} est maintenant « ${esc(issue.fields.status.name)} » : cette carte n'est plus d'actualité.`);
     const cible = wf[q.a];
@@ -71,7 +70,6 @@ module.exports = async function handler(req, res) {
     if (!t) return page(res, 409, "Transition indisponible", `Jira ne permet pas de passer ${esc(key)} en « ${esc(cible.nom)} » depuis son statut actuel.`);
     await jira(`/issue/${key}/comment`, { method: "POST", body: JSON.stringify({ body: adf(`Recette ${env.toUpperCase()} : ${ACTIONS[q.a].toLowerCase()} par le PO (carte Teams). Statut → ${cible.nom}.`) }) });
     await jira(`/issue/${key}/transitions`, { method: "POST", body: JSON.stringify({ transition: { id: t.id } }) });
-    await jira(`/issue/${key}`, { method: "PUT", body: JSON.stringify({ update: { labels: [{ add: label }] } }) });
     if (process.env.UAS_MB_TEAMS_WEBHOOK) {
       const txt = (x, o = {}) => ({ type: "TextBlock", wrap: true, text: x, ...o });
       await fetch(process.env.UAS_MB_TEAMS_WEBHOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({

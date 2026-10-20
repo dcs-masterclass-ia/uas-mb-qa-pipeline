@@ -4,7 +4,7 @@
  * Jira (webhook « issue updated », filtré par JQL) appelle POST /api/jira-hook?k=<JIRA_HOOK_KEY>.
  * La clé dans l'URL est le seul secret (les webhooks Jira créés par API ne sont pas signés) : elle est comparée à temps constant.
  * On ne déclenche QUE si le changelog contient un changement de statut vers un statut déclencheur ; tout autre événement
- * (commentaire, label posé par le poller…) est ignoré. Le travail est fait par GitHub Actions (workflow_dispatch).
+ * (commentaire, label, modification de champ…) est ignoré. Le travail est fait par GitHub Actions (workflow_dispatch).
  *
  * Variables : JIRA_HOOK_KEY, QA_WORKFLOW_JSON (statut -> environnement), GITHUB_DISPATCH_TOKEN (fine-grained, Actions:write
  * sur le seul dépôt du pipeline), GITHUB_REPO ("owner/repo"), QA_PRODUIT (défaut "DCS White label Factory"), QA_PRODUIT_FIELD (défaut customfield_10065), QA_TITRE_FILTRE (optionnel).
@@ -35,9 +35,15 @@ module.exports = async function handler(req, res) {
 
   const event = String((b.changelog || {}).id || b.timestamp || Date.now());
   if (!process.env.GITHUB_DISPATCH_TOKEN) return res.status(500).json({ ok: false, erreur: "GITHUB_DISPATCH_TOKEN absent" });
+  // dédoublonnage sans rien écrire dans Jira : le workflow est nommé « QA <ticket> <événement> » ; si une exécution récente porte déjà ce nom, on ignore
+  const gh = { Authorization: `Bearer ${process.env.GITHUB_DISPATCH_TOKEN}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+  const titre = `QA ${key} ${event}`;
+  const runs = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPO}/actions/workflows/qa.yml/runs?event=workflow_dispatch&per_page=30`, { headers: gh });
+  if (runs.ok && ((await runs.json()).workflow_runs || []).some(w => w.display_title === titre && Date.now() - Date.parse(w.created_at) < 3600e3))
+    return res.status(200).json({ ok: true, ignore: "doublon" });
   const r = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPO}/actions/workflows/qa.yml/dispatches`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${process.env.GITHUB_DISPATCH_TOKEN}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" },
+    headers: { ...gh, "Content-Type": "application/json" },
     body: JSON.stringify({ ref: "main", inputs: { ticket: key, env, event } }),
   });
   if (r.status !== 204) return res.status(502).json({ ok: false, erreur: `GitHub ${r.status}` });

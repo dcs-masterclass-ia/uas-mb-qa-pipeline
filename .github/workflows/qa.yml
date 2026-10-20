@@ -1,4 +1,5 @@
 name: qa-uas-mb
+run-name: "QA ${{ github.event.inputs.ticket }} ${{ github.event.inputs.event }}"
 # Recette automatique UAS MB. Dépôt public : aucune donnée sensible ici, tout vient des secrets et du dépôt privé « core ».
 #  - workflow_dispatch avec ticket/env/event : lancé quasi instantanément par le webhook Jira (api/jira-hook.js)
 #  - schedule : filet de sécurité (rattrape un webhook perdu) ; GitHub ne descend pas sous ~5 min.

@@ -3,12 +3,12 @@
 
 Deux façons d'être lancé :
   - par le WEBHOOK Jira (api/jira-hook.js -> workflow_dispatch) : `--ticket KEY --env ENV --event ID`
-    chaque entrée dans un statut de déploiement est un nouveau cycle : le label « déjà testé » est ignoré,
-    l'événement est dédoublonné, la décision précédente est effacée.
-  - par le filet de sécurité planifié (sans --ticket) : traite les tickets en statut déclencheur pas encore testés.
+    chaque entrée dans un statut de déploiement est un nouveau cycle ; le dédoublonnage est fait en amont
+    (api/jira-hook.js). AUCUNE écriture dans Jira (ni label, ni propriété) : seule la décision du PO écrit, sur clic.
+  - par le filet de sécurité planifié (sans --ticket) : liste les tickets entrés récemment en statut déclencheur.
 
 Modes : (défaut) SIMULATION, aucune écriture, pas de parcours funnel · --cartes : envoie les cartes, n'écrit rien dans Jira
-        · --apply : réel (dossiers de TEST en preview, cartes, labels Jira).
+        · --apply : réel (dossiers de TEST en preview et cartes Teams ; rien n'est écrit dans Jira).
 Le code de la recette vient du dépôt privé « core » (PYTHONPATH).
 """
 import argparse
@@ -18,7 +18,7 @@ import sys
 import time
 
 from pipeline import cards
-from pipeline.jira import load_workflow, tickets_a_tester, add_label, remove_label, search, event_deja_vu, marque_event
+from pipeline.jira import load_workflow, tickets_a_tester, search
 
 try:
     from mbqa.run import run_ticket
@@ -34,7 +34,7 @@ def sujets(wf, a):
         it = search(f"key = {a.ticket}")
         resume_t = it[0]["fields"]["summary"] if it else a.ticket
         return [{"key": a.ticket, "summary": resume_t, "status": "(forcé)", "env": a.env, "env_actif": wf["envs"][a.env]["actif"],
-                 "deja_teste": False, "label": wf["label_deja_teste"].format(env=a.env), "force": True}]
+                 "deja_teste": False, "force": True}]
     return [{**t, "force": False} for t in tickets_a_tester(wf)]
 
 
@@ -66,8 +66,6 @@ def main():
             print(f"  {t['key']} [{env}] déjà testé → ignoré"); continue
         if not t["env_actif"]:
             print(f"  {t['key']} [{env}] environnement inactif → ignoré"); continue
-        if a.apply and a.event and event_deja_vu(t["key"], a.event):
-            print(f"  {t['key']} [{env}] événement {a.event} déjà traité → ignoré"); continue
         print(f"  {t['key']} [{env}] {t['summary'][:60]}")
         delai = int(wf["envs"][env].get("delai_secondes", 0)) if a.apply and t["force"] else 0
         if delai:
@@ -75,19 +73,12 @@ def main():
         r = run_ticket(t["key"], env, wf, reel=a.apply)
         res = resume(r)
         print(f"     verdict : {res['verdict'][1]}  ({r['ok']} OK · {r['ko']} KO · {r['warn']} à regarder)")
-        if a.apply and t["force"]:
-            remove_label(t["key"], f"qa-decision-{env}")     # nouveau cycle : une nouvelle décision est possible
         if envoie:
             st = next(v for v in wf["statuts"].values() if v["env"] == env)
             cid = f"{t['key']}:{env}"
             code = cards.envoie(hook, cards.card_resultat(t["key"], t["summary"], env, res, cards.link(base, secret, cid, "accept"),
                                                           cards.link(base, secret, cid, "refuse"), st["accept"]["nom"], st["refuse"]["nom"]))
             print(f"     carte envoyée : {code}")
-        if a.apply:
-            add_label(t["key"], t["label"])
-            if a.event:
-                marque_event(t["key"], a.event)
-            print("     label posé :", t["label"])
 
 
 if __name__ == "__main__":
