@@ -29,7 +29,8 @@ def tickets_a_tester(wf):
     """Tickets du périmètre dans un statut déclencheur, avec l'état « déjà testé » (label posé après la recette)."""
     ids = ", ".join(wf["statuts"])
     out = []
-    for it in search(f'{wf["jql_base"]} AND status in ({ids}) ORDER BY updated DESC'):
+    h = int(wf.get("fenetre_filet_h", 3))   # filet de sécurité : seulement les statuts changés récemment (jamais tout l'historique)
+    for it in search(f'{wf["jql_base"]} AND status in ({ids}) AND status CHANGED AFTER -{h}h ORDER BY updated DESC'):
         st = wf["statuts"][it["fields"]["status"]["id"]]
         env = st["env"]
         label = wf["label_deja_teste"].format(env=env)

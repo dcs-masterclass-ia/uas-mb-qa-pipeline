@@ -7,7 +7,7 @@
  * (commentaire, label posé par le poller…) est ignoré. Le travail est fait par GitHub Actions (workflow_dispatch).
  *
  * Variables : JIRA_HOOK_KEY, QA_WORKFLOW_JSON (statut -> environnement), GITHUB_DISPATCH_TOKEN (fine-grained, Actions:write
- * sur le seul dépôt du pipeline), GITHUB_REPO ("owner/repo"), QA_TITRE_FILTRE (défaut "UAS MB").
+ * sur le seul dépôt du pipeline), GITHUB_REPO ("owner/repo"), QA_PRODUIT (défaut "DCS White label Factory"), QA_PRODUIT_FIELD (défaut customfield_10065), QA_TITRE_FILTRE (optionnel).
  */
 const crypto = require("crypto");
 
@@ -19,8 +19,11 @@ module.exports = async function handler(req, res) {
   const b = req.body && typeof req.body === "object" ? req.body : {};
   const key = b.issue && b.issue.key;
   if (!/^[A-Z][A-Z0-9]+-\d+$/.test(key || "")) return res.status(200).json({ ok: true, ignore: "pas un ticket" });
-  const filtre = process.env.QA_TITRE_FILTRE || "UAS MB";
-  if (!String((b.issue.fields || {}).summary || "").includes(filtre)) return res.status(200).json({ ok: true, ignore: "hors périmètre" });
+  // périmètre : champ « Product(s) » (liste d'options) contient le produit voulu ; titre optionnel en plus
+  const champ = process.env.QA_PRODUIT_FIELD || "customfield_10065", produit = process.env.QA_PRODUIT || "DCS White label Factory";
+  const valeurs = [].concat((b.issue.fields || {})[champ] || []).map(o => (o && o.value) || o);
+  if (!valeurs.includes(produit)) return res.status(200).json({ ok: true, ignore: "hors périmètre (produit)" });
+  if (process.env.QA_TITRE_FILTRE && !String((b.issue.fields || {}).summary || "").includes(process.env.QA_TITRE_FILTRE)) return res.status(200).json({ ok: true, ignore: "hors périmètre (titre)" });
 
   let wf = {};
   try { wf = JSON.parse(process.env.QA_WORKFLOW_JSON || "{}"); } catch { /* config absente */ }
