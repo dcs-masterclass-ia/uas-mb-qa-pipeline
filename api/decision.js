@@ -13,6 +13,7 @@
 const crypto = require("crypto");
 
 const ACTIONS = { accept: "Accepté", refuse: "Refusé" };
+const VERBE = { accept: "Accepter", refuse: "Refuser" };
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const signe = (id, a, exp) => crypto.createHmac("sha256", process.env.QA_LINK_SECRET || "").update(`${id}|${a}|${exp}`).digest("hex");
 
@@ -61,9 +62,9 @@ module.exports = async function handler(req, res) {
     if (req.method !== "POST") {
       const champs = ["id", "a", "exp", "sig"].map(k => `<input type="hidden" name="${k}" value="${esc(q[k])}">`).join("");
       const couleur = q.a === "accept" ? "#2b8f62" : "#c24a44";
-      return page(res, 200, `${ACTIONS[q.a]} la recette ?`,
+      return page(res, 200, `${VERBE[q.a]} la recette ?`,
         `<b>${esc(key)}</b> — ${esc(issue.fields.summary)}<br><span style="font-size:14px;color:#6d727a">Environnement ${esc(env)} · le ticket passera en « ${esc(cible.nom)} ».</span>`,
-        `<form method="post" style="margin-top:16px">${champs}<button style="font:600 15px system-ui;border:0;border-radius:12px;padding:11px 20px;color:#fff;background:${couleur};cursor:pointer">Confirmer : ${ACTIONS[q.a]}</button></form>`);
+        `<form method="post" style="margin-top:16px">${champs}<button style="font:600 15px system-ui;border:0;border-radius:12px;padding:11px 20px;color:#fff;background:${couleur};cursor:pointer">Confirmer : ${VERBE[q.a]}</button></form>`);
     }
     const { transitions } = await jira(`/issue/${key}/transitions`);
     const t = (transitions || []).find(x => x.to && String(x.to.id) === String(cible.id));

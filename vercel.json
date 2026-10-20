@@ -1,0 +1,4 @@
+{
+  "framework": null,
+  "functions": { "api/decision.js": { "maxDuration": 20 } }
+}

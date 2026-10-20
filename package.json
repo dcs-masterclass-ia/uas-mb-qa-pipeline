@@ -1,0 +1,5 @@
+{
+  "name": "uas-mb-qa-decision",
+  "private": true,
+  "engines": { "node": "22.x" }
+}

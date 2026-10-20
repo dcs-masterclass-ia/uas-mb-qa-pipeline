@@ -1,0 +1,8 @@
+pipeline/
+tests/
+config/
+requirements.txt
+.github/
+README.md
+core/
+.venv/

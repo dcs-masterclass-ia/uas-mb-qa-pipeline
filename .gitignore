@@ -9,3 +9,7 @@ config/workflow.yml
 Icon
 Icon?
 .DS_Store
+.vercel/
+
+.vercel
+.env*
