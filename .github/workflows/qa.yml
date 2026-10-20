@@ -65,5 +65,6 @@ jobs:
           if [ -n "$IN_TICKET" ]; then
             python -m pipeline.poller --apply --ticket "$IN_TICKET" --env "$IN_ENV" --event "$IN_EVENT"
           else
-            python -m pipeline.poller --apply
+            # filet de sécurité : SIMULATION tant que le mode réel n'est pas validé sur de vrais tickets
+            python -m pipeline.poller
           fi
